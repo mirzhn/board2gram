@@ -14,3 +14,5 @@ class Game(Base):
   
 
     game_type = relationship('GameType', back_populates='game')
+    player = relationship('Player', back_populates='game')
+    round = relationship('Round', back_populates='game')

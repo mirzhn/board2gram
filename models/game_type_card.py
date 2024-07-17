@@ -11,4 +11,4 @@ class GameTypeCard(Base):
     key = Column(String, nullable=False)
     value = Column(String)
   
-    game_type = relationship('GameTypeCard', back_populates='game_type_card')
+    game_type = relationship('GameType', back_populates='game_type_card')

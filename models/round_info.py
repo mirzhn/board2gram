@@ -10,4 +10,4 @@ class RoundInfo(Base):
     key = Column(String, nullable=False)
     value = Column(String)
 
-    game = relationship('Round', back_populates='round_info')
+    round = relationship('Round', back_populates='round_info')

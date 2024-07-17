@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from models import Base
 from game import GameManager
 from bot import Notifier
+import time
 
 
 # Конфигурация базы данных и бота
@@ -18,15 +19,27 @@ Base.metadata.create_all(bind=engine)
 # Инициализация Notifier
 notifier = Notifier(TELEGRAM_BOT_TOKEN)
 
-def main():
+async def main():
     with SessionLocal() as db:
         # Инициализация GameManager
         game_manager = GameManager(db, notifier)
 
-        chat_id = 123456789  # Замените на ваш chat_id
+        chat_id_1 = 123456789  # Замените на ваш chat_id
+        chat_id_2 = 553555555  # Замените на ваш chat_id
         game_type_name = 'chameleon'
-        print(game_manager.start_game(chat_id, game_type_name))
+        game_code = game_manager.start_game(chat_id_1, game_type_name)
+        print(game_manager.join_game(chat_id_2, game_code))
 
+        await game_manager.play(chat_id_1)
+
+        await game_manager.play(chat_id_1)
+
+        await game_manager.play(chat_id_1)
+
+        await game_manager.play(chat_id_1)
+
+        #time.sleep(3) 
+        print(game_manager.stop_game(chat_id_1))
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

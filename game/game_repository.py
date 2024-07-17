@@ -33,6 +33,8 @@ class GameRepository:
             self.db.commit()
             self.db.refresh(new_user)
             user_id = new_user.id
+        else:
+            user_id = user.id
         
         new_player = Player(user_id=user_id, game_id=game_id, is_captain=is_captain)
         self.db.add(new_player)

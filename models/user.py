@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from .base import Base
 
 class User(Base):
@@ -9,3 +10,5 @@ class User(Base):
     chat_id = Column(String)
     name = Column(String)
     dt = Column(DateTime, default=datetime.datetime.now())
+
+    player = relationship('Player', back_populates='user')

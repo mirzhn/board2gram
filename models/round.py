@@ -10,3 +10,4 @@ class Round(Base):
     num = Column(Integer)
 
     game = relationship('Game', back_populates='round')
+    round_info = relationship('RoundInfo', back_populates='round')
