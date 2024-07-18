@@ -39,7 +39,7 @@ class Game:
         used_card_ids = self.game_service.get_used_card_ids(self.game_state.id)
         unused_cards = [card for card in self.game_cards if card.id not in used_card_ids]
         if not unused_cards:
-            raise Exception("No unused cards available")
+            raise Warning("No unused cards available. Start new game.")
         selected_card = random.choice(unused_cards)
         return selected_card
 
