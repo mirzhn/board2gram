@@ -38,7 +38,7 @@ class GameRepository:
 
         # Save players
         for player in game.players:
-            player_record = Player(game_id=game_record.id, user_id=player['user_id'], is_captain=(player['user_id'] == game.captain_id))
+            player_record = Player(game_id=game_record.id, user_id=player['user_id'], is_captain=player['is_captain'])
             self.db.merge(player_record)
         self.db.commit()
         # Save rounds
