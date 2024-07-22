@@ -47,7 +47,7 @@ class GameManager:
             for chat_id, message in messages:
                 await self.notifier.notify(chat_id, message)     
         else:
-            return f"No game found with code {game_code}"
+            return f"No game found for chat {chat_id}"
         return f"Started the game for chat {chat_id}"
 
     def save_game(self, game: Game):
@@ -60,3 +60,13 @@ class GameManager:
             return game
         else:
             return None
+
+    def stop_game(self, chat_id: int):
+        if chat_id in self.games_by_chat:
+            game = self.games_by_chat[chat_id]
+            self.save_game(game)
+            self.game_service.stop(game)
+            del self.games_by_chat[chat_id]
+            return f"Stopped game for chat {chat_id}"
+        else:
+            return f"No game found for chat {chat_id}"

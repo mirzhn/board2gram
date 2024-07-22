@@ -29,33 +29,37 @@ class GameRepository:
 
         # Save users
         for player in game.players:
-            user_record = self.db.query(User).filter(User.id == player['user_id']).first()
+            user_record = self.db.query(User).filter(User.chat_id == player['user_id']).first()
             if not user_record:
-                new_user = User(id=player['user_id'])  # Дополните другими необходимыми полями
+                new_user = User(chat_id=player['user_id'])  # Дополните другими необходимыми полями
                 self.db.add(new_user)
                 self.db.commit()
                 self.db.refresh(new_user)
 
         # Save players
         for player in game.players:
-            player_record = Player(game_id=game_record.id, user_id=player['user_id'], is_captain=player['is_captain'])
-            self.db.merge(player_record)
-        self.db.commit()
+            user_record = self.db.query(User).filter(User.chat_id == player['user_id']).first()
+            player_record = self.db.query(Player).filter(Player.game_id == game_record.id, Player.user_id == user_record.id).first()
+            if not player_record:
+                player_record = Player(game_id=game_record.id, user_id=user_record.id, is_captain=player['is_captain'])
+                self.db.add(player_record)
+            self.db.commit()
         # Save rounds
         for round_num in range(1, game.round + 1):
-            round_record = Round(game_id=game_record.id, num=round_num)
-            self.db.merge(round_record)
+            round_record = self.db.query(Round).filter(Round.game_id == game_record.id, Round.num == round_num).first()
+            if not round_record:
+                round_record = Round(game_id=game_record.id, num=round_num)
+                self.db.add(round_record)
             self.db.commit()
-            self.db.refresh(round_record)
 
             # Save round info using merge
-            for round_info in game.round_info:
+        for round_info in game.round_info:
+            round_record = self.db.query(Round).filter(Round.game_id == game_record.id, Round.num == round_info['round_id']).first()
+            round_info_record = self.db.query(RoundInfo).filter(RoundInfo.round_id == round_record.id, RoundInfo.key == round_info['key']).first()
+            if not round_info_record:
                 round_info_record = RoundInfo(round_id=round_record.id, key=round_info['key'], value=round_info['value'])
-                self.db.merge(round_info_record)
-        self.db.commit()
-
-        game_record.current_round = game.round
-        self.db.commit()
+                self.db.add(round_info_record)
+            self.db.commit()
 
     def load_game(self, game_code: str):
         game_record = self.db.query(Game).filter(Game.code == game_code, Game.finish_dt == None).first()
@@ -87,3 +91,10 @@ class GameRepository:
         if not game_type:
             raise ValueError(f"Game type '{game_type_name}' not found")
         return game_type.id
+    
+    def stop_game(self, game: Game):
+        game_record = self.db.query(Game).filter(Game.code == game.code, Game.finish_dt == None).first()
+        if not game_record:
+            raise ValueError(f"Game with code '{game.code}' not found")
+        game_record.finish_dt = datetime.datetime.now()
+        self.db.commit()

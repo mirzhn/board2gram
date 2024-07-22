@@ -20,18 +20,18 @@ class Game:
         messages = []
         chameleon = self.assign_roles()
         card = self.get_next_card()
-        card_words = json.loads(card.value)["words"]
+        card_words = json.loads(card['value'])["words"]
         selected_word = random.choice(card_words)
 
-        self.round_info.append({'round_id': self.round, 'key': 'chameleon', 'value': chameleon.chat_id})
-        self.round_info.append({'round_id': self.round, 'key': 'card', 'value': card.id})
+        self.round_info.append({'round_id': self.round, 'key': 'chameleon', 'value': chameleon['user_id']})
+        self.round_info.append({'round_id': self.round, 'key': 'card', 'value': card['id']})
         self.round_info.append({'round_id': self.round, 'key': 'selected_word', 'value': selected_word})
 
         for player in self.players:
-            if player.role == 'chameleon':
-                messages.append((player.user_id, f"Раунд {self.round}. Вы хамелеон. Ваши темы: {', '.join(card_words)}"))
+            if player['role'] == 'chameleon':
+                messages.append((player['user_id'], f"Раунд {self.round}. Вы хамелеон. Ваши темы: {', '.join(card_words)}"))
             else:
-                messages.append((player.user_id, f"Раунд {self.round}. Вы игрок. Ваши темы: {', '.join(card_words)}. Слово: {selected_word}"))
+                messages.append((player['user_id'], f"Раунд {self.round}. Вы игрок. Ваши темы: {', '.join(card_words)}. Слово: {selected_word}"))
         return messages
 
     def assign_roles(self):
@@ -42,7 +42,7 @@ class Game:
         return chameleon
 
     def get_next_card(self):
-        self.deck = [card for card in self.deck if card.id not in self.used_deck]
+        self.deck = [card for card in self.deck if card not in self.used_deck]
         if not self.deck:
             raise Exception("No unused cards available")
         selected_card =  random.choice(self.deck)

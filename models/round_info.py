@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy import Column, Integer, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -11,3 +11,5 @@ class RoundInfo(Base):
     value = Column(String)
 
     round = relationship('Round', back_populates='round_info')
+
+    __table_args__ = (UniqueConstraint('round_id', 'key', name='round_info_round_id_key_uc'),)

@@ -18,3 +18,6 @@ class GameService:
 
     def reload(self, game_code: str):
         return self.repository.load_game(game_code)
+    
+    def stop(self, game: Game):
+        self.repository.stop_game(game)
