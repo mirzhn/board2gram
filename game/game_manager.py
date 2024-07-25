@@ -26,14 +26,12 @@ class GameManager:
         game = Game(deck, chat_id, code, game_type)
         self.games_by_code[code] = game
         self.games_by_chat[chat_id] = game
-        self.save(game)
         return code
 
     def join(self, chat_id: int, code: str):
         if code in self.games_by_code:
             game = self.games_by_code[code]
             game.join(chat_id)
-            self.save(game)
             return f"Player {chat_id} joined game with code {code}"
         else:
             return f"No game found with code {code}"
@@ -42,7 +40,6 @@ class GameManager:
         if chat_id in self.games_by_chat:
             game = self.games_by_chat[chat_id]
             messages = game.play()
-            self.save(game)
 
             for chat_id, message in messages:
                 await self.notifier.notify(chat_id, message)     
