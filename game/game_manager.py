@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from .game_factory import GameFactory
 from .game_service import GameService 
-from bot import Notifier
 from .chameleon_game import ChameleonGame
 from .base_game import Game
 import random
@@ -25,7 +24,7 @@ class GameManager:
     
     def generate_code(self, existing_codes):
         while True:
-            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            code = ''.join(random.choices(string.digits, k=4))
             if code not in existing_codes:
                 return code
 
@@ -51,8 +50,8 @@ class GameManager:
             game = self.games_by_chat[chat_id]
             messages = game.play()
 
-            for chat_id, message in messages:
-                await self.notifier.notify(chat_id, message)     
+            for _chat_id, message in messages:
+                await self.notifier.notify(_chat_id, message)     
         else:
             return f"No game found for chat {chat_id}"
         return f"Started the game for chat {chat_id}"
@@ -77,3 +76,6 @@ class GameManager:
             return f"Stopped game for chat {chat_id}"
         else:
             return f"No game found for chat {chat_id}"
+        
+    def get_available_game_types(self):
+        return ['chameleon', 'bunker']  # Пример списка типов игр
