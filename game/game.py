@@ -2,18 +2,18 @@ import random
 import json
 
 class Game:
-    def __init__(self, deck, captain_id, code, game_type_name, players=None, round=0):
+    def __init__(self, deck, captain_id, code, game_type, players=None, round=0):
         self.deck = deck
         self.used_deck = []
         self.code = code
-        self.game_type_name = game_type_name
+        self.game_type = game_type
         self.players = players if players is not None else []
         self.round = round
         self.round_info = []
         self.join(captain_id, True)
 
-    def join(self, user_id, is_captain=False):
-        self.players.append({'user_id': user_id, 'role': 'player', 'is_captain': is_captain})
+    def join(self, chat_id, is_captain=False):
+        self.players.append({'user_id': chat_id, 'role': 'player', 'is_captain': is_captain})
 
     def play(self):
         self.round += 1
