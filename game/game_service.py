@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from .game_repository import GameRepository
-from .game import Game
+from .base_game import Game
 
 class GameService:
     def __init__(self, db: Session):

@@ -1,18 +1,28 @@
 from sqlalchemy.orm import Session
-from .game import Game
+from .game_factory import GameFactory
 from .game_service import GameService 
 from bot import Notifier
+from .chameleon_game import ChameleonGame
+from .base_game import Game
 import random
 import string
 
 class GameManager:
     def __init__(self, db: Session, notifier):
+        self.factory = GameFactory()
         self.db = db
         self.game_service = GameService(db)
         self.notifier = notifier
         self.games_by_code = {}
         self.games_by_chat = {}
+        self.register_game('chameleon', ChameleonGame)
 
+    def register_game(self, game_name, game_class):
+        self.factory.register_game(game_name, game_class)
+
+    def create_game(self, game_name, *args, **kwargs):
+        return self.factory.get_game(game_name, *args, **kwargs)
+    
     def generate_code(self, existing_codes):
         while True:
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
@@ -23,7 +33,7 @@ class GameManager:
         existing_codes = self.game_service.get_open_game_codes()
         code = self.generate_code(existing_codes)
         deck = self.game_service.get_deck(game_type)
-        game = Game(deck, chat_id, code, game_type)
+        game = self.create_game('chameleon', deck, chat_id, code, game_type)
         self.games_by_code[code] = game
         self.games_by_chat[chat_id] = game
         return code
