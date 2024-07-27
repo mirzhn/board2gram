@@ -1,0 +1,29 @@
+import random
+import json
+
+class Game:
+    def __init__(self, deck, captain_id, code, game_type, players=None, round=0):
+        self.deck = deck
+        self.used_deck = []
+        self.code = code
+        self.game_type = game_type
+        self.players = players if players is not None else []
+        self.round = round
+        self.round_info = []
+        self.join(captain_id, True)
+
+    def join(self, chat_id, is_captain=False):
+        self.players.append({'user_id': chat_id, 'role': 'player', 'is_captain': is_captain})
+
+    def play(self):
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+    def get_random_card(self):
+        self.deck = [card for card in self.deck if card not in self.used_deck]
+        if not self.deck:
+            raise Exception("No unused cards available")
+        selected_card =  random.choice(self.deck)
+        self.used_deck.append(selected_card)
+        return selected_card
+
+    

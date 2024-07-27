@@ -1,45 +1,99 @@
-import asyncio
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from game import GameManager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base
-from game import GameManager
 from bot import Notifier
-import time
+import yaml
 
 
-# Конфигурация базы данных и бота
-DATABASE_URL = 'sqlite:///board2game.db'
-TELEGRAM_BOT_TOKEN = 'your-telegram-bot-token'
+# Загрузка конфигурации из файла config.yaml
+with open('config.yaml', 'r') as config_file:
+    config = yaml.safe_load(config_file)
 
-# Настройка SQLAlchemy
+# Получаем токен и URL базы данных из конфигурации
+TOKEN = config['telegram_bot']['token']
+DATABASE_URL = config['database']['url']
+
 engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
+Session = sessionmaker(bind=engine)
+session = Session()
 
-# Инициализация Notifier
-notifier = Notifier(TELEGRAM_BOT_TOKEN)
 
-async def main():
-    with SessionLocal() as db:
-        # Инициализация GameManager
-        game_manager = GameManager(db, notifier)
+main_menu_keyboard = [['Создать игру', 'Присоединиться к игре']]
+in_game_keyboard = [['Следующий раунд', 'Остановить игру']]
 
-        chat_id_1 = 123456789  # Замените на ваш chat_id
-        chat_id_2 = 553555555  # Замените на ваш chat_id
-        game_type_name = 'chameleon'
-        game_code = game_manager.start_game(chat_id_1, game_type_name)
-        print(game_manager.join_game(chat_id_2, game_code))
+main_menu_markup = ReplyKeyboardMarkup(main_menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
+in_game_markup = ReplyKeyboardMarkup(in_game_keyboard, one_time_keyboard=False, resize_keyboard=True)
 
-        await game_manager.play_game(chat_id_1)
+# Создаем экземпляр GameManager
+notifier = Notifier(TOKEN)
+game_manager = GameManager(session, notifier)
 
-        await game_manager.play_game(chat_id_1)
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    text = update.message.text
+    chat_id = update.message.chat_id
 
-        await game_manager.play_game(chat_id_1)
+    if text == 'Создать игру':
+        await show_game_types(update, context)
+    elif text in game_manager.get_available_game_types():
+        await create_game(update, context, text)
+    elif text == 'Присоединиться к игре':
+        context.user_data['awaiting_code'] = True
+        await update.message.reply_text('Пожалуйста, предоставьте код игры.', reply_markup=ReplyKeyboardMarkup([[]]))
+    elif context.user_data.get('awaiting_code'):
+        await join_game(update, context, text)
+    elif text == 'Следующий раунд':
+        await play_game(update, context)
+    elif text == 'Остановить игру':
+        await stop_game(update, context)
+    else:
+        await update.message.reply_text('Неизвестная команда. Пожалуйста, используйте меню.')
 
-        await game_manager.play_game(chat_id_1)
+async def show_game_types(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    available_game_types = game_manager.get_available_game_types()
+    game_type_keyboard = [[game_type] for game_type in available_game_types]
+    game_type_markup = ReplyKeyboardMarkup(game_type_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    await update.message.reply_text('Выберите тип игры:', reply_markup=game_type_markup)
 
-        #time.sleep(3) 
-        print(game_manager.stop_game(chat_id_1))
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        'Привет! Создай новую игру или присоединись к текущей',
+        reply_markup=main_menu_markup
+    )
+
+async def create_game(update: Update, context: ContextTypes.DEFAULT_TYPE, game_type: str) -> None:
+    chat_id = update.message.chat_id
+    code = game_manager.start(chat_id, game_type)
+    await update.message.reply_text(f'Игра создана! Код игры: {code}', reply_markup=in_game_markup)
+
+
+async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE, code: str) -> None:
+    chat_id = update.message.chat_id
+    message = game_manager.join(chat_id, code)
+    await update.message.reply_text(message)
+    context.user_data['awaiting_code'] = False
+
+async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.message.chat_id
+    message = await game_manager.play(chat_id)
+    await update.message.reply_text(message)
+
+async def stop_game(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.message.chat_id
+    message = game_manager.stop(chat_id)
+    await update.message.reply_text(message)
+
+def main():
+    # Создаем приложение
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    # Добавляем обработчики команд
+    app.add_handler(CommandHandler('start', start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Запускаем бота
+    app.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

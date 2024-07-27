@@ -12,17 +12,17 @@ class GameRepository:
         games = self.db.query(Game).filter(Game.finish_dt == None).all()
         return [game.code for game in games]
 
-    def get_game_deck(self, game_type_name: str):
-        game_type = self.db.query(GameType).filter(GameType.name == game_type_name).first()
+    def get_deck(self, game_type: str):
+        game_type = self.db.query(GameType).filter(GameType.name == game_type).first()
         if not game_type:
-            raise ValueError(f"Game type '{game_type_name}' not found")
+            raise ValueError(f"Game type '{game_type}' not found")
         cards = self.db.query(GameTypeCard).filter(GameTypeCard.game_type_id == game_type.id).all()
         return [{'id': card.id, 'key': card.key, 'value': card.value} for card in cards]
 
-    def save_game(self, game: Game):
+    def save(self, game: Game):
         game_record = self.db.query(Game).filter(Game.code == game.code, Game.finish_dt == None).first()
         if not game_record:
-            game_record = Game(code=game.code, game_type_id=self.get_game_type_id(game.game_type_name), start_dt=datetime.datetime.now())
+            game_record = Game(code=game.code, game_type_id=self.get_game_type_id(game.game_type), start_dt=datetime.datetime.now())
             self.db.add(game_record)
             self.db.commit()
             self.db.refresh(game_record)
@@ -61,8 +61,8 @@ class GameRepository:
                 self.db.add(round_info_record)
             self.db.commit()
 
-    def load_game(self, game_code: str):
-        game_record = self.db.query(Game).filter(Game.code == game_code, Game.finish_dt == None).first()
+    def load(self, code: str):
+        game_record = self.db.query(Game).filter(Game.code == code, Game.finish_dt == None).first()
         if not game_record:
             return None
         
@@ -77,7 +77,7 @@ class GameRepository:
 
         game = Game(
             code=game_record.code,
-            game_type_name=game_record.game_type.name,
+            game_type=game_record.game_type.name,
             players=player_list,
             round=max_round,
             round_info=round_info_list, 
@@ -86,13 +86,13 @@ class GameRepository:
 
         return game
 
-    def get_game_type_id(self, game_type_name: str) -> int:
-        game_type = self.db.query(GameType).filter(GameType.name == game_type_name).first()
+    def get_game_type_id(self, game_type: str) -> int:
+        game_type = self.db.query(GameType).filter(GameType.name == game_type).first()
         if not game_type:
-            raise ValueError(f"Game type '{game_type_name}' not found")
+            raise ValueError(f"Game type '{game_type}' not found")
         return game_type.id
     
-    def stop_game(self, game: Game):
+    def stop(self, game: Game):
         game_record = self.db.query(Game).filter(Game.code == game.code, Game.finish_dt == None).first()
         if not game_record:
             raise ValueError(f"Game with code '{game.code}' not found")
