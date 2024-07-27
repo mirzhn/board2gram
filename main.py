@@ -4,12 +4,17 @@ from game import GameManager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from bot import Notifier
+import yaml
 
-# Ваш токен от BotFather
-TOKEN = '7176595145:AAEpjFe3rg4eDWj79K7LSNYTiNKZeorWHt8'
 
-# Настройка базы данных
-DATABASE_URL = 'sqlite:///board2game.db'
+# Загрузка конфигурации из файла config.yaml
+with open('config.yaml', 'r') as config_file:
+    config = yaml.safe_load(config_file)
+
+# Получаем токен и URL базы данных из конфигурации
+TOKEN = config['telegram_bot']['token']
+DATABASE_URL = config['database']['url']
+
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 session = Session()
