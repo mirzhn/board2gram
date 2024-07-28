@@ -31,7 +31,7 @@ class GameRepository:
         for player in game.players:
             user_record = self.db.query(User).filter(User.chat_id == player['user_id']).first()
             if not user_record:
-                new_user = User(chat_id=player['user_id'])  # Дополните другими необходимыми полями
+                new_user = User(chat_id=player['user_id'], name=player['name'])  # Дополните другими необходимыми полями
                 self.db.add(new_user)
                 self.db.commit()
                 self.db.refresh(new_user)

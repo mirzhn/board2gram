@@ -58,19 +58,23 @@ async def show_game_types(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        'Привет! Создай новую игру или присоединись к текущей',
+        f'Привет! Создай новую игру или присоединись к текущей',
         reply_markup=main_menu_markup
     )
 
 async def create_game(update: Update, context: ContextTypes.DEFAULT_TYPE, game_type: str) -> None:
-    chat_id = update.message.chat_id
-    code = game_manager.start(chat_id, game_type)
+    user = {}
+    user['chat_id'] = update.message.chat_id
+    user['name'] = update.message.from_user.first_name
+    code = game_manager.start(user, game_type)
     await update.message.reply_text(f'Игра создана! Код игры: {code}', reply_markup=in_game_markup)
 
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE, code: str) -> None:
-    chat_id = update.message.chat_id
-    message = game_manager.join(chat_id, code)
+    user = {}
+    user['chat_id'] = update.message.chat_id
+    user['name'] = update.message.from_user.first_name
+    message = await game_manager.join(user, code)
     await update.message.reply_text(message)
     context.user_data['awaiting_code'] = False
 
@@ -81,7 +85,7 @@ async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def stop_game(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.message.chat_id
-    message = game_manager.stop(chat_id)
+    message = await game_manager.stop(chat_id)
     await update.message.reply_text(message)
 
 def main():

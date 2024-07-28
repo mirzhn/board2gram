@@ -2,7 +2,7 @@ import random
 import json
 
 class Game:
-    def __init__(self, deck, captain_id, code, game_type, players=None, round=0):
+    def __init__(self, deck, user, code, game_type, players=None, round=0):
         self.deck = deck
         self.used_deck = []
         self.code = code
@@ -10,10 +10,12 @@ class Game:
         self.players = players if players is not None else []
         self.round = round
         self.round_info = []
-        self.join(captain_id, True)
+        self.join(user, True)
+        self.captain_id = user['chat_id']
+         
 
-    def join(self, chat_id, is_captain=False):
-        self.players.append({'user_id': chat_id, 'role': 'player', 'is_captain': is_captain})
+    def join(self, user, is_captain=False):
+        self.players.append({'user_id': user['chat_id'], 'name': user['name'], 'role': 'player', 'is_captain': is_captain})
 
     def play(self):
         raise NotImplementedError("This method should be overridden by subclasses")
