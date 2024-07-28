@@ -14,10 +14,10 @@ class GameManager:
         self.notifier = notifier
         self.games_by_code = {}
         self.games_by_chat = {}
-        self.register_game('chameleon', ChameleonGame)
+        self.register_game('chameleon', ChameleonGame, 'Заяц')
 
-    def register_game(self, game_name, game_class):
-        self.factory.register_game(game_name, game_class)
+    def register_game(self, game_name, game_class, alias):
+        self.factory.register_game(game_name, game_class, alias)
 
     def create_game(self, game_name, *args, **kwargs):
         return self.factory.get_game(game_name, *args, **kwargs)
@@ -81,7 +81,7 @@ class GameManager:
             return "Game not exist"
         
     def get_available_game_types(self):
-        return ['chameleon', 'bunker']  # Пример списка типов игр
+        return self.factory.get_available_game_types()
     
     async def notify_all_players(self, game: Game, message: str):
         for player in game.players:
