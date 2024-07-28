@@ -37,7 +37,7 @@ class ChameleonGame(Game):
         table_html = "<pre>\n"
 
         # Определим фиксированную ширину столбцов
-        column_width = 20
+        column_width = max(len(word) for word in words)
 
         # Создание строк для таблицы 2x8
         for i in range(0, len(words), 2):
