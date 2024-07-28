@@ -41,10 +41,11 @@ class GameManager:
         if code in self.games_by_code:
             game = self.games_by_code[code]
             game.join(user)
+            self.games_by_chat[user['chat_id']] = game
             await self.notify_captain(game, f'игрок {user['name']} присоединился к игре')
             return f"Player {user['chat_id']} joined game with code {code}"
         else:
-            return f"No game found with code {code}"
+            return "Game not exist"
 
     async def play(self, chat_id: int):
         if chat_id in self.games_by_chat:
@@ -54,7 +55,7 @@ class GameManager:
             for _chat_id, message in messages:
                 await self.notifier.notify(_chat_id, message)     
         else:
-            return f"No game found for chat {chat_id}"
+            return "Game not exist"
         return f"Started the game for chat {chat_id}"
 
     def save(self, game: Game):
@@ -77,7 +78,7 @@ class GameManager:
             await self.notify_all_players(game, "Игра завершена! спасибо за игру")
             return f"Stopped game for chat {chat_id}"
         else:
-            return f"No game found for chat {chat_id}"
+            return "Game not exist"
         
     def get_available_game_types(self):
         return ['chameleon', 'bunker']  # Пример списка типов игр
@@ -88,3 +89,19 @@ class GameManager:
 
     async def notify_captain(self, game: Game, message: str):
         await self.notifier.notify(game.captain_id, message)
+
+    async def get_rules(self, chat_id: int):
+        if chat_id in self.games_by_chat:
+            game = self.games_by_chat[chat_id]
+            return game.get_rules()
+        else:
+            return "Game not exist"
+        
+    async def leave(self, user: list):
+        if user['chat_id'] in self.games_by_chat:
+            game = self.games_by_chat[user['chat_id']]
+            game.leave(user)
+            await self.notify_captain(game, f'игрок {user['name']} покинул игру')
+            return f"Player {user['chat_id']} leave game"
+        else:
+            return "Game not exist"

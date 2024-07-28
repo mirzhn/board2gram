@@ -12,10 +12,13 @@ class Game:
         self.round_info = []
         self.join(user, True)
         self.captain_id = user['chat_id']
-         
+        self.rules=''
 
     def join(self, user, is_captain=False):
         self.players.append({'user_id': user['chat_id'], 'name': user['name'], 'role': 'player', 'is_captain': is_captain})
+
+    def leave(self, user):
+        self.players = [player for player in self.players if player['user_id'] != user['chat_id']]
 
     def play(self):
         raise NotImplementedError("This method should be overridden by subclasses")
@@ -27,5 +30,8 @@ class Game:
         selected_card =  random.choice(self.deck)
         self.used_deck.append(selected_card)
         return selected_card
+    
+    def get_rules(self):
+        return self.rules
 
     
