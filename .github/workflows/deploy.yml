@@ -23,6 +23,19 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+
+    - name: Check files on server
+      env:
+        VPS_IP: ${{ secrets.VPS_IP }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP '
+          echo "Current user: $(whoami)";
+          echo "Current directory: $(pwd)";
+          ls -la /opt/board2gram;
+          ls -la /opt/board2gram/deploy.sh
+        '
+
     - name: Run deploy script on server
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
