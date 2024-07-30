@@ -1,5 +1,3 @@
-#!/bin/bash
-
 PROJECT_DIR="/root/projects/board2gram"
 cd $PROJECT_DIR
 
