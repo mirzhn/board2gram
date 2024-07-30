@@ -28,4 +28,4 @@ jobs:
         VPS_IP: ${{ secrets.VPS_IP }}
         VPS_USER: ${{ secrets.VPS_USER }}
       run: |
-        ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP 'bash /opt/board2gram/deploy.sh'
+        ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP 'bash /root/projects//board2gram/deploy.sh'
