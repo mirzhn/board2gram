@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+    workflow_dispatch:
+      inputs:
+        branch:
+          description: 'Branch to deploy'
+          required: true
+          default: 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Run deploy script on server
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        VPS_IP: ${{ secrets.VPS_IP }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP 'bash -s' < ./home/projects/board2gram/deploy.sh
