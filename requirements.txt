@@ -1,0 +1,4 @@
+sqlalchemy
+pyyaml
+alembic
+python-telegram-bot
