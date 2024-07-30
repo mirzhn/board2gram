@@ -43,7 +43,7 @@ class GameManager:
             game.join(user)
             self.games_by_chat[user['chat_id']] = game
             await self.notify_captain(game, f'игрок {user['name']} присоединился к игре')
-            return f"Player {user['chat_id']} joined game with code {code}"
+            return f"Вы присоединились к игре с кодом {code}"
         else:
             return "Game not exist"
 
@@ -56,7 +56,6 @@ class GameManager:
                 await self.notifier.notify(_chat_id, message)     
         else:
             return "Game not exist"
-        return f"Started the game for chat {chat_id}"
 
     def save(self, game: Game):
         self.game_service.save(game)
@@ -76,7 +75,7 @@ class GameManager:
             self.game_service.stop(game)
             del self.games_by_chat[chat_id]
             await self.notify_all_players(game, "Игра завершена! спасибо за игру")
-            return f"Stopped game for chat {chat_id}"
+            return f"Спасибо за игру, капитан!"
         else:
             return "Game not exist"
         
@@ -102,6 +101,6 @@ class GameManager:
             game = self.games_by_chat[user['chat_id']]
             game.leave(user)
             await self.notify_captain(game, f'игрок {user['name']} покинул игру')
-            return f"Player {user['chat_id']} leave game"
+            return f"Вы вышли из игры"
         else:
             return "Game not exist"

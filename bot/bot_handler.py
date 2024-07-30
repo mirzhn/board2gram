@@ -1,3 +1,5 @@
+import logging
+import functools
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -25,7 +27,17 @@ class BotHandler:
             'Выйти из игры': self.leave_game
         }
 
+    def log_function_call(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logger = logging.getLogger('botHandler')
+            logger.debug(f'Calling {func.__name__} with args: {args} and kwargs: {kwargs}')
+            result = func(*args, **kwargs)
+            logger.debug(f'{func.__name__} returned {result}')
+            return result
+        return wrapper
 
+    @log_function_call
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text = update.message.text
 
@@ -43,22 +55,26 @@ class BotHandler:
             else:
                 await update.message.reply_text('Неизвестная команда')
 
+    @log_function_call
     async def await_game_code(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.user_data['awaiting_code'] = True
         await update.message.reply_text('Пожалуйста, предоставьте код игры.', reply_markup=ReplyKeyboardMarkup([[]]))
 
+    @log_function_call
     async def show_game_types(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         game_types = self.game_manager.get_available_game_types()
         game_type_keyboard = [[alias] for alias in game_types.values()]
         game_type_markup = ReplyKeyboardMarkup(game_type_keyboard, one_time_keyboard=True, resize_keyboard=True)
         await update.message.reply_text('Выберите тип игры:', reply_markup=game_type_markup)
 
+    @log_function_call
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             f'Привет! Создай новую игру или присоединись к текущей',
             reply_markup=self.main_menu_markup
         )
 
+    @log_function_call
     async def create_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE, game_alias: str) -> None:
         game_types = self.game_manager.get_available_game_types()
         game_type = next(key for key, alias in game_types.items() if alias == game_alias)
@@ -69,6 +85,7 @@ class BotHandler:
         code = self.game_manager.start(user, game_type)
         await update.message.reply_text(f'Игра создана! Код игры: {code}', reply_markup=self.in_game_captain_markup)
 
+    @log_function_call
     async def join_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE, code: str) -> None:
         user = {
             'chat_id': update.message.chat_id,
@@ -78,14 +95,15 @@ class BotHandler:
         await update.message.reply_text(message, reply_markup=self.in_game_player_markup)
         context.user_data['awaiting_code'] = False
 
+    @log_function_call
     async def play_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
         message = await self.game_manager.play(chat_id)
         if message == "Game not exist":
             await self.return_to_main_menu(update, context, message)
-        else:
-            await update.message.reply_text(message)
+        
 
+    @log_function_call
     async def stop_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
         message = await self.game_manager.stop(chat_id)
@@ -94,9 +112,11 @@ class BotHandler:
         else:
             await update.message.reply_text(message, reply_markup=self.main_menu_markup)
 
+    @log_function_call
     async def return_to_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message: str) -> None:
         await update.message.reply_text('Что-то пошло не так. Попробуйте создать или присоединиться к игре', reply_markup=self.main_menu_markup)
 
+    @log_function_call
     async def show_game_rules(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
         message = await self.game_manager.get_rules(chat_id)
@@ -105,6 +125,7 @@ class BotHandler:
         else:
             await update.message.reply_text(message)
 
+    @log_function_call
     async def leave_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = {
             'chat_id': update.message.chat_id,
@@ -116,6 +137,7 @@ class BotHandler:
         else:
             await update.message.reply_text(message, reply_markup=self.main_menu_markup)
 
+    @log_function_call
     def run(self):
         # Создаем приложение
         app = ApplicationBuilder().token(self.TOKEN).build()
