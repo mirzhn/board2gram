@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from .game_factory import GameFactory
 from .game_service import GameService 
 from .chameleon_game import ChameleonGame
+from .bunker_game import BumkerGame
 from .base_game import Game
 import random
 import string
@@ -15,6 +16,7 @@ class GameManager:
         self.games_by_code = {}
         self.games_by_chat = {}
         self.register_game('chameleon', ChameleonGame, 'Заяц')
+        self.register_game('bunker', BumkerGame, 'Бункер')
 
     def register_game(self, game_name, game_class, alias):
         self.factory.register_game(game_name, game_class, alias)
