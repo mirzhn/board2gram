@@ -1,0 +1,14 @@
+[Unit]
+Description=board2gram Telegram Bot Service
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/root/projects/board2gram
+ExecStart=/root/projects/board2gram/venv/bin/python /root/projects/board2gram/main.py
+Restart=on-failure
+Environment="PATH=/root/projects/board2gram/venv/bin"
+
+[Install]
+WantedBy=multi-user.target
