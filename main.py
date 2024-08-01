@@ -7,10 +7,17 @@ import logging.config
 import os
 import yaml
 import time
+import signal
+import sys
 
 logging.config.fileConfig('logging.conf')
 
 logger = logging.getLogger(__name__)
+
+def signal_handler(sig, frame):
+    logger.info('Received signal to terminate. Exiting...')
+    sys.exit(0)
+
 def main():
     try:
         with open('config.yaml', 'r') as config_file:
@@ -27,6 +34,10 @@ def main():
         game_manager = GameManager(session, notifier)
 
         bot = BotHandler(game_manager, TOKEN)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
         bot.run()
     
     except Exception as e:
@@ -34,10 +45,8 @@ def main():
         raise   
      
 if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except Exception as e:
-            logger.exception("Error in main loop")
-
+    try:
+        main()
+    except Exception as e:
+        logger.exception("Error in main loop")
     
