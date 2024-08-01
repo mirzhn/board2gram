@@ -32,7 +32,7 @@ class GameManager:
         existing_codes = self.game_service.get_open_game_codes()
         code = self.generate_code(existing_codes)
         deck = self.game_service.get_deck(game_type)
-        game = self.create_game('chameleon', deck, user, code, game_type)
+        game = self.create_game(game_type, deck, user, code, game_type)
         self.games_by_code[code] = game
         self.games_by_chat[user['chat_id']] = game
         return code

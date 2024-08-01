@@ -23,11 +23,15 @@ class Game:
     def play(self):
         raise NotImplementedError("This method should be overridden by subclasses")
 
-    def get_random_card(self):
+    def get_random_card(self, category_key=None):
         self.deck = [card for card in self.deck if card not in self.used_deck]
-        if not self.deck:
-            raise Exception("No unused cards available")
-        selected_card =  random.choice(self.deck)
+
+        if category_key:
+            filtered_deck = [card for card in self.deck if card['key'] == category_key]
+        else:
+            filtered_deck = self.deck
+
+        selected_card = random.choice(filtered_deck)
         self.used_deck.append(selected_card)
         return selected_card
     
