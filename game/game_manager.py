@@ -44,7 +44,7 @@ class GameManager:
             game = self.games_by_code[code]
             game.join(user)
             self.games_by_chat[user['chat_id']] = game
-            await self.notify_captain(game, f'игрок {user['name']} присоединился к игре')
+            await self.notify_captain(game, f"игрок {user['name']} присоединился к игре")
             return f"Вы присоединились к игре с кодом {code}"
         else:
             return "Game not exist"
@@ -102,7 +102,7 @@ class GameManager:
         if user['chat_id'] in self.games_by_chat:
             game = self.games_by_chat[user['chat_id']]
             game.leave(user)
-            await self.notify_captain(game, f'игрок {user['name']} покинул игру')
+            await self.notify_captain(game, f"игрок {user['name']} покинул игру")
             return f"Вы вышли из игры"
         else:
             return "Game not exist"

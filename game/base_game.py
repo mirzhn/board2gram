@@ -15,6 +15,8 @@ class Game:
         self.rules=''
 
     def join(self, user, is_captain=False):
+        if any(player['user_id'] == user['chat_id'] for player in self.players):
+            return
         self.players.append({'user_id': user['chat_id'], 'name': user['name'], 'role': 'player', 'is_captain': is_captain})
 
     def leave(self, user):
