@@ -76,7 +76,8 @@ class BotConversation:
         )
         code = self.game_manager.start(user, game_type)
         await update.message.reply_text(
-            texts.MSG_GAME_CREATED.format(code=code), reply_markup=self.markups.in_game_captain
+            texts.MSG_GAME_CREATED.format(code=code),
+            reply_markup=self.markups.get_captain_markup(game_type),
         )
         if game_type == "whoami":
             await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
@@ -93,8 +94,11 @@ class BotConversation:
             await self.return_to_main_menu(update, context)
             context.user_data["awaiting_code"] = False
             return
-        await update.message.reply_text(message, reply_markup=self.markups.in_game_player)
         game_type = self.game_manager.get_game_type_by_chat(user.chat_id)
+        await update.message.reply_text(
+            message,
+            reply_markup=self.markups.get_player_markup(game_type or ""),
+        )
         if game_type == "whoami":
             await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
         if game_type == "mafia":
