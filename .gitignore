@@ -12,3 +12,7 @@ venv/
 config.yaml
 
 log/
+
+
+.venv/
+venv/
