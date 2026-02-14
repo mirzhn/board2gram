@@ -23,7 +23,7 @@ class ChameleonGameTests(unittest.TestCase):
 
     def test_assign_roles_sets_exactly_one_chameleon(self):
         self.game.assign_roles()
-        chameleons = [p for p in self.game.players if p["role"] == "chameleon"]
+        chameleons = [p for p in self.game.players if p.role == "chameleon"]
         self.assertEqual(len(chameleons), 1)
 
     def test_join_does_not_duplicate_same_player(self):
@@ -34,11 +34,11 @@ class ChameleonGameTests(unittest.TestCase):
 
     def test_chameleon_selection_is_statistically_balanced(self):
         rounds = 20000
-        counts = {p["user_id"]: 0 for p in self.game.players}
+        counts = {p.user_id: 0 for p in self.game.players}
 
         for _ in range(rounds):
             chosen = self.game.assign_roles()
-            counts[chosen["user_id"]] += 1
+            counts[chosen.user_id] += 1
 
         expected = rounds / len(self.game.players)
         tolerance = expected * 0.10
@@ -52,15 +52,15 @@ class ChameleonGameTests(unittest.TestCase):
         for player_id in range(2, 7):
             game.join({"chat_id": player_id, "name": f"P{player_id}"})
 
-        counts = {p["user_id"]: 0 for p in game.players}
-        max_streak = {p["user_id"]: 0 for p in game.players}
-        streak_runs = {p["user_id"]: 0 for p in game.players}
+        counts = {p.user_id: 0 for p in game.players}
+        max_streak = {p.user_id: 0 for p in game.players}
+        streak_runs = {p.user_id: 0 for p in game.players}
 
         previous = None
         current_streak = 0
 
         for _ in range(rounds):
-            chosen = game.assign_roles()["user_id"]
+            chosen = game.assign_roles().user_id
             counts[chosen] += 1
 
             if chosen == previous:

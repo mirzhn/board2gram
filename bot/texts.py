@@ -1,0 +1,17 @@
+MAIN_MENU_KEYBOARD = [["Создать игру", "Присоединиться к игре"]]
+IN_GAME_CAPTAIN_KEYBOARD = [["Правила игры", "Следующий раунд", "Остановить игру"]]
+IN_GAME_PLAYER_KEYBOARD = [["Правила игры", "Выйти из игры"]]
+
+CMD_CREATE_GAME = "Создать игру"
+CMD_JOIN_GAME = "Присоединиться к игре"
+CMD_NEXT_ROUND = "Следующий раунд"
+CMD_STOP_GAME = "Остановить игру"
+CMD_RULES = "Правила игры"
+CMD_LEAVE_GAME = "Выйти из игры"
+
+MSG_UNKNOWN_COMMAND = "Неизвестная команда"
+MSG_ENTER_GAME_CODE = "Пожалуйста, пришлите код игры."
+MSG_SELECT_GAME_TYPE = "Выберите тип игры:"
+MSG_START = "Привет! Создай новую игру или присоединись к текущей"
+MSG_GAME_CREATED = "Игра создана! Код игры: {code}"
+MSG_RETURN_TO_MENU = "Что-то пошло не так. Попробуйте создать или присоединиться к игре"
