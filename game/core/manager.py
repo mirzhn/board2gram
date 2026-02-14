@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..base_game import GameSession
 from ..modes.bunker import BunkerGame
 from ..modes.chameleon import ChameleonGame
+from ..modes.ilito import IlitoGame
 from ..types import UserPayload
 from .factory import GameFactory
 from .results import GameResult
@@ -22,6 +23,7 @@ class GameManager:
         self.games_by_chat: dict[int, GameSession] = {}
         self.register_game("chameleon", ChameleonGame, "Заяц")
         self.register_game("bunker", BunkerGame, "Бункер")
+        self.register_game("ilito", IlitoGame, "Илито")
 
     def register_game(self, game_name, game_class, alias):
         self.factory.register_game(game_name, game_class, alias)
@@ -59,7 +61,6 @@ class GameManager:
         if chat_id in self.games_by_chat:
             game = self.games_by_chat[chat_id]
             messages = game.play()
-
             for _chat_id, message in messages:
                 await self.notifier.notify(_chat_id, message)
             return None

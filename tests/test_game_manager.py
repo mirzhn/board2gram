@@ -32,6 +32,11 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(code), 4)
         self.assertNotIn(code, {"1111", "2222"})
 
+    def test_available_game_types_contains_ilito(self):
+        aliases = self.manager.get_available_game_types()
+        self.assertIn("ilito", aliases)
+        self.assertEqual(aliases["ilito"], "Илито")
+
     def test_start_creates_and_tracks_game(self):
         user = {"chat_id": 10, "name": "U1"}
         game = StubGame()
