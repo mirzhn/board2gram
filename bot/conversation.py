@@ -1,4 +1,4 @@
-from telegram import ReplyKeyboardMarkup, Update
+﻿from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from game.core.results import GameResult
@@ -24,6 +24,10 @@ class BotConversation:
 
         if context.user_data.get("awaiting_code"):
             await self.join_game(update, context, text)
+            return
+
+        if context.user_data.get("awaiting_mafia_setup"):
+            await self.submit_mafia_setup(update, context, text)
             return
 
         game_types = self.game_manager.get_available_game_types()
@@ -76,6 +80,8 @@ class BotConversation:
         )
         if game_type == "whoami":
             await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
+        if game_type == "mafia":
+            await update.message.reply_text(texts.MSG_MAFIA_SETUP_HINT)
 
     async def join_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE, code: str) -> None:
         user = UserPayload(
@@ -88,21 +94,46 @@ class BotConversation:
             context.user_data["awaiting_code"] = False
             return
         await update.message.reply_text(message, reply_markup=self.markups.in_game_player)
-        if self.game_manager.get_game_type_by_chat(user.chat_id) == "whoami":
+        game_type = self.game_manager.get_game_type_by_chat(user.chat_id)
+        if game_type == "whoami":
             await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
+        if game_type == "mafia":
+            await update.message.reply_text("Игра 'Мафия': ждите настройки от капитана.")
         context.user_data["awaiting_code"] = False
 
     async def play_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
-        if self.game_manager.get_game_type_by_chat(chat_id) == "whoami":
+        game_type = self.game_manager.get_game_type_by_chat(chat_id)
+        if game_type == "whoami":
+            context.user_data["awaiting_mafia_setup"] = False
             message = await self.game_manager.start_whoami_round(chat_id)
+        elif game_type == "mafia":
+            message = await self.game_manager.start_mafia_setup(chat_id)
+            if message != GameResult.GAME_NOT_FOUND and "только" not in str(message).lower():
+                context.user_data["awaiting_mafia_setup"] = True
         else:
+            context.user_data["awaiting_mafia_setup"] = False
             message = await self.game_manager.play(chat_id)
+
         if message == GameResult.GAME_NOT_FOUND:
             await self.return_to_main_menu(update, context)
             return
         if message is not None:
             await update.message.reply_text(message)
+
+    async def submit_mafia_setup(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str
+    ) -> None:
+        chat_id = update.message.chat_id
+        message = await self.game_manager.submit_mafia_setup(chat_id, text)
+        if message == GameResult.GAME_NOT_FOUND:
+            context.user_data["awaiting_mafia_setup"] = False
+            await self.return_to_main_menu(update, context)
+            return
+
+        await update.message.reply_text(message)
+        if "Теперь нажмите 'Раздать карточки'" in str(message):
+            context.user_data["awaiting_mafia_setup"] = False
 
     async def stop_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
@@ -110,6 +141,7 @@ class BotConversation:
         if message == GameResult.GAME_NOT_FOUND:
             await self.return_to_main_menu(update, context)
             return
+        context.user_data["awaiting_mafia_setup"] = False
         await update.message.reply_text(message, reply_markup=self.markups.main_menu)
 
     async def deal_cards(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -120,6 +152,8 @@ class BotConversation:
         if message == GameResult.GAME_NOT_FOUND:
             await self.return_to_main_menu(update, context)
             return
+        if "Запускаем настройку заново" in str(message):
+            context.user_data["awaiting_mafia_setup"] = True
         await update.message.reply_text(message)
 
     async def return_to_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -145,4 +179,5 @@ class BotConversation:
         if message == GameResult.GAME_NOT_FOUND:
             await self.return_to_main_menu(update, context)
             return
+        context.user_data["awaiting_mafia_setup"] = False
         await update.message.reply_text(message, reply_markup=self.markups.main_menu)

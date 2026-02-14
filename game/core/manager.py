@@ -7,6 +7,7 @@ from ..base_game import GameSession
 from ..modes.bunker import BunkerGame
 from ..modes.chameleon import ChameleonGame
 from ..modes.ilito import IlitoGame
+from ..modes.mafia import MafiaGame
 from ..modes.whoami import WhoAmIGame
 from ..types import UserPayload
 from .factory import GameFactory
@@ -26,6 +27,7 @@ class GameManager:
         self.register_game("bunker", BunkerGame, "Бункер")
         self.register_game("ilito", IlitoGame, "Илито")
         self.register_game("whoami", WhoAmIGame, "Карточки на лоб")
+        self.register_game("mafia", MafiaGame, "Мафия")
 
     def register_game(self, game_name, game_class, alias):
         self.factory.register_game(game_name, game_class, alias)
@@ -139,18 +141,50 @@ class GameManager:
         await self.notify_all_players(game, message)
         return None
 
+    async def start_mafia_setup(self, chat_id: int):
+        game = self.games_by_chat.get(chat_id)
+        if game is None:
+            return GameResult.GAME_NOT_FOUND
+        if not isinstance(game, MafiaGame):
+            return "Эта команда доступна только в режиме 'Мафия'."
+        if chat_id != game.captain_id:
+            return "Начинать игру может только капитан."
+        return game.start_setup()
+
+    async def submit_mafia_setup(self, chat_id: int, text: str):
+        game = self.games_by_chat.get(chat_id)
+        if game is None:
+            return GameResult.GAME_NOT_FOUND
+        if not isinstance(game, MafiaGame):
+            return "Эта команда доступна только в режиме 'Мафия'."
+        if chat_id != game.captain_id:
+            return "Настраивать игру может только капитан."
+        return game.apply_setup_input(text)
+
     async def deal_cards(self, chat_id: int):
         game = self.games_by_chat.get(chat_id)
         if game is None:
             return GameResult.GAME_NOT_FOUND
-        if not isinstance(game, WhoAmIGame):
-            return "Эта команда доступна только в режиме 'Карточки на лоб'."
-        if chat_id != game.captain_id:
-            return "Раздавать карточки может только капитан."
-        if not game.can_deal():
-            return game.waiting_message()
 
-        messages = game.deal_cards()
-        for _chat_id, message in messages:
-            await self.notifier.notify(_chat_id, message)
-        return None
+        if isinstance(game, WhoAmIGame):
+            if chat_id != game.captain_id:
+                return "Раздавать карточки может только капитан."
+            if not game.can_deal():
+                return game.waiting_message()
+            messages = game.deal_cards()
+            for _chat_id, message in messages:
+                await self.notifier.notify(_chat_id, message)
+            return None
+
+        if isinstance(game, MafiaGame):
+            if chat_id != game.captain_id:
+                return "Раздавать карточки может только капитан."
+            valid, reason = game.validate_before_deal()
+            if not valid:
+                return reason
+            messages = game.deal_cards()
+            for _chat_id, message in messages:
+                await self.notifier.notify(_chat_id, message)
+            return None
+
+        return "Эта команда доступна только в режимах 'Карточки на лоб' и 'Мафия'."

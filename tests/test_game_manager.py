@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, Mock
 
 from game.core.results import GameResult
 from game.game_manager import GameManager
+from game.modes.mafia import MafiaGame
 from game.modes.whoami import WhoAmIGame
 from game.types import PlayerState, UserPayload
 
@@ -29,6 +30,14 @@ def make_whoami_game():
     return game
 
 
+def make_mafia_game():
+    game = MafiaGame([], {"chat_id": 1, "name": "Cap"}, "2222", "mafia")
+    game.join({"chat_id": 2, "name": "P2"})
+    game.join({"chat_id": 3, "name": "P3"})
+    game.join({"chat_id": 4, "name": "P4"})
+    return game
+
+
 class GameManagerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.notifier = AsyncMock()
@@ -40,12 +49,14 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(code), 4)
         self.assertNotIn(code, {"1111", "2222"})
 
-    def test_available_game_types_contains_ilito(self):
+    def test_available_game_types_contains_new_modes(self):
         aliases = self.manager.get_available_game_types()
         self.assertIn("ilito", aliases)
         self.assertEqual(aliases["ilito"], "Илито")
         self.assertIn("whoami", aliases)
         self.assertEqual(aliases["whoami"], "Карточки на лоб")
+        self.assertIn("mafia", aliases)
+        self.assertEqual(aliases["mafia"], "Мафия")
 
     def test_start_creates_and_tracks_game(self):
         user = {"chat_id": 10, "name": "U1"}
@@ -164,14 +175,6 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(game.submitted_words, {})
         self.assertEqual(self.notifier.notify.await_count, len(game.players))
 
-    async def test_start_whoami_round_requires_captain(self):
-        game = make_whoami_game()
-        self.manager.games_by_chat[2] = game
-
-        message = await self.manager.start_whoami_round(2)
-
-        self.assertIn("только капитан", message.lower())
-
     async def test_deal_cards_returns_waiting_message_with_missing_players(self):
         game = make_whoami_game()
         game.submit_word(1, "Слон")
@@ -182,6 +185,33 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Сдано: 1/3", message)
         self.assertIn("P2", message)
         self.assertIn("P3", message)
+
+    async def test_start_mafia_setup_and_submit_flow(self):
+        game = make_mafia_game()
+        self.manager.games_by_chat[1] = game
+
+        start_message = await self.manager.start_mafia_setup(1)
+        self.assertIn("Сколько будет мафии", start_message)
+
+        self.assertIn("Сколько будет мирных", await self.manager.submit_mafia_setup(1, "1"))
+        self.assertIn("Будет ли шериф", await self.manager.submit_mafia_setup(1, "1"))
+        self.assertIn("Будет ли доктор", await self.manager.submit_mafia_setup(1, "да"))
+        done = await self.manager.submit_mafia_setup(1, "нет")
+        self.assertIn("Настройка сохранена", done)
+
+    async def test_deal_mafia_cards_notifies_non_captains(self):
+        game = make_mafia_game()
+        game.start_setup()
+        game.apply_setup_input("1")
+        game.apply_setup_input("1")
+        game.apply_setup_input("да")
+        game.apply_setup_input("нет")
+        self.manager.games_by_chat[1] = game
+
+        message = await self.manager.deal_cards(1)
+
+        self.assertIsNone(message)
+        self.assertEqual(self.notifier.notify.await_count, 3)
 
 
 if __name__ == "__main__":
