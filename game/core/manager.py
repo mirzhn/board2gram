@@ -1,4 +1,4 @@
-import random
+﻿import random
 import string
 
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from ..base_game import GameSession
 from ..modes.bunker import BunkerGame
 from ..modes.chameleon import ChameleonGame
 from ..modes.ilito import IlitoGame
+from ..modes.whoami import WhoAmIGame
 from ..types import UserPayload
 from .factory import GameFactory
 from .results import GameResult
@@ -24,6 +25,7 @@ class GameManager:
         self.register_game("chameleon", ChameleonGame, "Заяц")
         self.register_game("bunker", BunkerGame, "Бункер")
         self.register_game("ilito", IlitoGame, "Илито")
+        self.register_game("whoami", WhoAmIGame, "Карточки на лоб")
 
     def register_game(self, game_name, game_class, alias):
         self.factory.register_game(game_name, game_class, alias)
@@ -110,3 +112,45 @@ class GameManager:
             await self.notify_captain(game, f"игрок {user_payload.name} покинул игру")
             return "Вы вышли из игры"
         return GameResult.GAME_NOT_FOUND
+
+    def get_game_type_by_chat(self, chat_id: int) -> str | None:
+        game = self.games_by_chat.get(chat_id)
+        if game is None:
+            return None
+        return game.game_type
+
+    def submit_word(self, user: UserPayload, word: str):
+        user_payload = UserPayload.from_any(user)
+        game = self.games_by_chat.get(user_payload.chat_id)
+        if game is None or not isinstance(game, WhoAmIGame):
+            return None
+        return game.submit_word(user_payload.chat_id, word)
+
+    async def start_whoami_round(self, chat_id: int):
+        game = self.games_by_chat.get(chat_id)
+        if game is None:
+            return GameResult.GAME_NOT_FOUND
+        if not isinstance(game, WhoAmIGame):
+            return "Эта команда доступна только в режиме 'Карточки на лоб'."
+        if chat_id != game.captain_id:
+            return "Начинать новый раунд может только капитан."
+
+        message = game.start_round()
+        await self.notify_all_players(game, message)
+        return None
+
+    async def deal_cards(self, chat_id: int):
+        game = self.games_by_chat.get(chat_id)
+        if game is None:
+            return GameResult.GAME_NOT_FOUND
+        if not isinstance(game, WhoAmIGame):
+            return "Эта команда доступна только в режиме 'Карточки на лоб'."
+        if chat_id != game.captain_id:
+            return "Раздавать карточки может только капитан."
+        if not game.can_deal():
+            return game.waiting_message()
+
+        messages = game.deal_cards()
+        for _chat_id, message in messages:
+            await self.notifier.notify(_chat_id, message)
+        return None

@@ -1,8 +1,9 @@
-import unittest
+﻿import unittest
 from unittest.mock import AsyncMock, Mock
 
-from game.game_manager import GameManager
 from game.core.results import GameResult
+from game.game_manager import GameManager
+from game.modes.whoami import WhoAmIGame
 from game.types import PlayerState, UserPayload
 
 
@@ -21,6 +22,13 @@ class StubGame:
         self.get_rules = Mock(return_value="rules")
 
 
+def make_whoami_game():
+    game = WhoAmIGame([], {"chat_id": 1, "name": "Cap"}, "1111", "whoami")
+    game.join({"chat_id": 2, "name": "P2"})
+    game.join({"chat_id": 3, "name": "P3"})
+    return game
+
+
 class GameManagerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.notifier = AsyncMock()
@@ -36,6 +44,8 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
         aliases = self.manager.get_available_game_types()
         self.assertIn("ilito", aliases)
         self.assertEqual(aliases["ilito"], "Илито")
+        self.assertIn("whoami", aliases)
+        self.assertEqual(aliases["whoami"], "Карточки на лоб")
 
     def test_start_creates_and_tracks_game(self):
         user = {"chat_id": 10, "name": "U1"}
@@ -141,6 +151,37 @@ class GameManagerTests(unittest.IsolatedAsyncioTestCase):
     async def test_leave_missing_game(self):
         message = await self.manager.leave({"chat_id": 2, "name": "P2"})
         self.assertEqual(message, GameResult.GAME_NOT_FOUND)
+
+    async def test_start_whoami_round_notifies_all_players_and_resets_words(self):
+        game = make_whoami_game()
+        game.submit_word(1, "Слон")
+        game.submit_word(2, "Жираф")
+        self.manager.games_by_chat[1] = game
+
+        message = await self.manager.start_whoami_round(1)
+
+        self.assertIsNone(message)
+        self.assertEqual(game.submitted_words, {})
+        self.assertEqual(self.notifier.notify.await_count, len(game.players))
+
+    async def test_start_whoami_round_requires_captain(self):
+        game = make_whoami_game()
+        self.manager.games_by_chat[2] = game
+
+        message = await self.manager.start_whoami_round(2)
+
+        self.assertIn("только капитан", message.lower())
+
+    async def test_deal_cards_returns_waiting_message_with_missing_players(self):
+        game = make_whoami_game()
+        game.submit_word(1, "Слон")
+        self.manager.games_by_chat[1] = game
+
+        message = await self.manager.deal_cards(1)
+
+        self.assertIn("Сдано: 1/3", message)
+        self.assertIn("P2", message)
+        self.assertIn("P3", message)
 
 
 if __name__ == "__main__":

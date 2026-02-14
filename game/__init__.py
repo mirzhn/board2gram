@@ -3,5 +3,6 @@ from .base_game import GameSession
 from .modes.bunker import BunkerGame
 from .modes.chameleon import ChameleonGame
 from .modes.ilito import IlitoGame
+from .modes.whoami import WhoAmIGame
 
-__all__ = ['GameRepository', 'GameManager', 'GameService', 'GameSession', 'BunkerGame', 'ChameleonGame', 'IlitoGame']
+__all__ = ['GameRepository', 'GameManager', 'GameService', 'GameSession', 'BunkerGame', 'ChameleonGame', 'IlitoGame', 'WhoAmIGame']

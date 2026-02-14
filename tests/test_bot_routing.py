@@ -1,10 +1,11 @@
-import unittest
+﻿import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 from bot import texts
 from bot.conversation import BotConversation
 from bot.keyboards import build_markups
+from game.core.results import GameResult
 
 
 def make_update(message_text: str, chat_id: int = 1, first_name: str = "User"):
@@ -21,6 +22,10 @@ class BotRoutingTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.game_manager = Mock()
         self.game_manager.get_available_game_types.return_value = {"chameleon": "Заяц"}
+        self.game_manager.submit_word.return_value = None
+        self.game_manager.get_game_type_by_chat.return_value = None
+        self.game_manager.play = AsyncMock(return_value=None)
+        self.game_manager.start_whoami_round = AsyncMock(return_value=None)
         self.conversation = BotConversation(self.game_manager, build_markups())
 
     async def test_handle_message_unknown_command(self):
@@ -58,6 +63,37 @@ class BotRoutingTests(unittest.IsolatedAsyncioTestCase):
         await self.conversation.handle_message(update, context)
 
         handler.assert_awaited_once_with(update, context)
+
+    async def test_handle_message_routes_to_submit_word(self):
+        self.game_manager.submit_word.return_value = "Слово принято."
+        update = make_update("Гэндальф")
+        context = SimpleNamespace(user_data={})
+
+        await self.conversation.handle_message(update, context)
+
+        self.game_manager.submit_word.assert_called_once()
+        update.message.reply_text.assert_awaited_once_with("Слово принято.")
+
+    async def test_play_game_uses_start_whoami_round_for_whoami(self):
+        self.game_manager.get_game_type_by_chat.return_value = "whoami"
+        update = make_update("x", chat_id=7)
+        context = SimpleNamespace(user_data={})
+
+        await self.conversation.play_game(update, context)
+
+        self.game_manager.start_whoami_round.assert_awaited_once_with(7)
+        self.game_manager.play.assert_not_called()
+
+    async def test_play_game_returns_to_main_menu_for_not_found(self):
+        self.game_manager.get_game_type_by_chat.return_value = "whoami"
+        self.game_manager.start_whoami_round.return_value = GameResult.GAME_NOT_FOUND
+        self.conversation.return_to_main_menu = AsyncMock()
+        update = make_update("x", chat_id=7)
+        context = SimpleNamespace(user_data={})
+
+        await self.conversation.play_game(update, context)
+
+        self.conversation.return_to_main_menu.assert_awaited_once_with(update, context)
 
 
 if __name__ == "__main__":

@@ -31,6 +31,17 @@ class BotConversation:
             await self.create_game(update, context, text)
             return
 
+        submit_response = self.game_manager.submit_word(
+            UserPayload(
+                chat_id=update.message.chat_id,
+                name=update.message.from_user.first_name,
+            ),
+            text,
+        )
+        if submit_response is not None:
+            await update.message.reply_text(submit_response)
+            return
+
         await update.message.reply_text(texts.MSG_UNKNOWN_COMMAND)
 
     async def await_game_code(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -63,6 +74,8 @@ class BotConversation:
         await update.message.reply_text(
             texts.MSG_GAME_CREATED.format(code=code), reply_markup=self.markups.in_game_captain
         )
+        if game_type == "whoami":
+            await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
 
     async def join_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE, code: str) -> None:
         user = UserPayload(
@@ -75,13 +88,21 @@ class BotConversation:
             context.user_data["awaiting_code"] = False
             return
         await update.message.reply_text(message, reply_markup=self.markups.in_game_player)
+        if self.game_manager.get_game_type_by_chat(user.chat_id) == "whoami":
+            await update.message.reply_text(texts.MSG_WHOAMI_SUBMIT_WORD)
         context.user_data["awaiting_code"] = False
 
     async def play_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
-        message = await self.game_manager.play(chat_id)
+        if self.game_manager.get_game_type_by_chat(chat_id) == "whoami":
+            message = await self.game_manager.start_whoami_round(chat_id)
+        else:
+            message = await self.game_manager.play(chat_id)
         if message == GameResult.GAME_NOT_FOUND:
             await self.return_to_main_menu(update, context)
+            return
+        if message is not None:
+            await update.message.reply_text(message)
 
     async def stop_game(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id = update.message.chat_id
@@ -90,6 +111,16 @@ class BotConversation:
             await self.return_to_main_menu(update, context)
             return
         await update.message.reply_text(message, reply_markup=self.markups.main_menu)
+
+    async def deal_cards(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        chat_id = update.message.chat_id
+        message = await self.game_manager.deal_cards(chat_id)
+        if message is None:
+            return
+        if message == GameResult.GAME_NOT_FOUND:
+            await self.return_to_main_menu(update, context)
+            return
+        await update.message.reply_text(message)
 
     async def return_to_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
